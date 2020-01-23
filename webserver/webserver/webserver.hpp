@@ -11,13 +11,10 @@
 
 #include <iostream>
 
-#ifdef _cplusplus
 extern "C"{
-#endif
 #include "csapp.h"
-#ifdef _cplusplus
 }
-#endif
+
 
 class Webserver{
     private:

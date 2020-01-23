@@ -6,6 +6,8 @@
 
 int main(int argc, char** argv)
 {
+    LOGI("webserver program begin!");
+    
     if(argc != 2){
         LOGE("usage: %s <port>\n", argv[0]);
         exit(1);

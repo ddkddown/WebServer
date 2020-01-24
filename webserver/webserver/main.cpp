@@ -3,18 +3,22 @@
 #include "webserver.hpp"
 #include "serverlog.hpp"
 #include "globalvar.h"
+#include "csapp.hpp"
 
 int main(int argc, char** argv)
 {
     LOGI("webserver program begin!");
     
+    int port = 80;
     if(argc != 2){
-        LOGE("usage: %s <port>\n", argv[0]);
-        exit(1);
+        LOGI("usage: %s <port>\n", argv[0]);
+    }else{
+        port = atoi(argv[1]);
     }
     
-    conn.port = atoi(argv[1]);
-    conn.listenfd = Open_listenfd(conn.port);
+    Csapp app;
+    conn.port = port;
+    conn.listenfd = app.Open_listenfd(conn.port);
     if(conn.listenfd < 0){
         LOGE("open listen fd failed! %d", conn.listenfd);
         exit(1);
@@ -24,7 +28,7 @@ int main(int argc, char** argv)
         LOGI("web server start!");
         
         conn.clientlen = sizeof(conn.clientaddr);
-        conn.connfd = Accept(conn.listenfd, (struct sockaddr*)&conn.clientaddr,
+        conn.connfd = app.Accept(conn.listenfd, (struct sockaddr*)&conn.clientaddr,
                             (socklen_t*)&conn.clientlen);
         if(conn.connfd < 0){
             LOGE("accept connfd failed! %d",conn.connfd);
@@ -33,7 +37,7 @@ int main(int argc, char** argv)
         
         auto instance = Webserver::getInstance();
         instance->doit(conn.connfd);
-        Close(conn.connfd);
+        app.Close(conn.connfd);
     }
     
 }

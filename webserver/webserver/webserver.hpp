@@ -11,10 +11,10 @@
 
 #include <iostream>
 
-extern "C"{
-#include "csapp.h"
-}
+#include "csapp.hpp"
 
+extern int h_errno;
+extern char **environ;
 
 class Webserver{
     private:
@@ -23,6 +23,7 @@ class Webserver{
         Webserver& operator=(const Webserver&);
     
         static Webserver* instance;
+        Csapp app;
     public:
         static Webserver* getInstance(){
             return instance;

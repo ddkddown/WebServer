@@ -21,7 +21,7 @@ struct connect{
 
 //存放全局变量
 
-struct connect conn;
+//struct connect conn;
 
 //存放全局变量
 #endif /* globalvar_hpp */

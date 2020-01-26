@@ -2,7 +2,7 @@
 
 CXX = g++
 EXEC_TARGET = WebServer
-SOURCE_CPP = main.cpp webserver.cpp csapp.cpp
+SOURCE_CPP = main.cpp webserver.cpp csapp.cpp start.cpp
 OBJECT_TEST = main.o
 
 LDFLAGS_COMMON = -std=c++11

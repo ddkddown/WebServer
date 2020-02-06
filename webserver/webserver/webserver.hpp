@@ -16,6 +16,9 @@
 extern int h_errno;
 extern char **environ;
 
+#define GET "GET"
+#define POST "POST"
+
 class Webserver{
     private:
         Webserver(){};
@@ -43,7 +46,7 @@ class Webserver{
         @param rp 读取数据的结构体
         @return
          **/
-        void read_requesthdrs(rio_t* rp);
+        void read_requesthdrs(rio_t* rp,char* method,char* cgiargs);
     
         /**
          @brief 将url解析为一个文件名和一个可选的CGI参数字符串

@@ -24,7 +24,8 @@ void Webserver::doit(int fd){
     LOGD("readline b :%s",buf);
     sscanf(buf, "%s %s %s",method, url, version);
     
-    if(!strcasecmp(method, GET) || !strcasecmp(method, POST)){
+    LOGI("buf:%s,method:%s,url:%s,version:%s",buf,method,url,version);
+    if(!strcasecmp(method, GET) && !strcasecmp(method, POST)){
         clienterror(fd, filename, "501", "Not Implemented",
                     "Web Server does not implement this method");
         return;

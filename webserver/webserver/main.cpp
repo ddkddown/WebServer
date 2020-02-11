@@ -13,7 +13,7 @@ int main(int argc, char** argv)
         port = atoi(argv[1]);
     }
     Start program(port);
-    program.startService();
+    program.run_poll();
     
 }
 

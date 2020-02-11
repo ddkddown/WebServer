@@ -15,9 +15,12 @@ Start::Start(int port){
         LOGE("open listen fd failed! %d", conn.listenfd);
         exit(1);
     }
+    
+    clients.clear();
+    clients.push_back(conn.listenfd);
 }
 
-void Start::startService(){
+void Start::accept_clients(){
     LOGI("web server start!");
     
     conn.clientlen = sizeof(conn.clientaddr);
@@ -28,10 +31,45 @@ void Start::startService(){
             LOGE("accept connfd failed! %d",conn.connfd);
             exit(1);
         }
-    
-        auto instance = Webserver::getInstance();
-        instance->doit(conn.connfd);
-        app.Close(conn.connfd);
+        
+        clients.push_back(conn.connfd);
+    }
+}
+
+void Start::run_poll(){
+    while (1) {
+        FD_ZERO(&rfd);
+        FD_SET(conn.listenfd,&rfd);
+        
+        int maxfd = conn.listenfd+1;
+        if(!clients.empty()){
+            for(auto i : clients){
+                FD_SET(i,&rfd);
+                maxfd = conn.listenfd>i?conn.listenfd+1:i+1;
+            }
+        }
+        
+        switch (select(maxfd, &rfd, nullptr, nullptr, nullptr)) {
+            case -1:
+                LOGI("select error! %s",strerror(errno));
+                exit(-1);
+                break;
+            case 0:
+                break;
+            default:
+                if(FD_ISSET(conn.listenfd,&rfd)){
+                    accept_clients();
+                }
+                
+                for(auto i : clients){
+                    if(FD_ISSET(i,&rfd)){
+                        auto instance = Webserver::getInstance();
+                        instance->doit(i);
+                        app.Close(i);
+                    }
+                }
+                break;
+        }
     }
 }
 

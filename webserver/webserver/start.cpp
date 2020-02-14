@@ -66,6 +66,14 @@ void Start::run_poll(){
                         auto instance = Webserver::getInstance();
                         instance->doit(i);
                         app.Close(i);
+                        for (vector<int>::iterator it = clients.begin();
+                             it != clients.end();) {
+                            if(*it == i){
+                                it = clients.erase(it);
+                            }else{
+                                ++it;
+                            }
+                        }
                     }
                 }
                 break;
@@ -78,5 +86,7 @@ Start::~Start(){
         app.Close(conn.listenfd);
     }
     
-    LOGI("web server stoped!");
+    for(auto i : clients){
+        app.Close(i);
+    }
 }

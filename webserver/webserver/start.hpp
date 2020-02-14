@@ -18,6 +18,8 @@ extern "C"{
 #include "globalvar.h"
 }
 
+using namespace std;
+
 class Start{
     private:
         Csapp app;
@@ -26,11 +28,12 @@ class Start{
         std::vector<int> clients;
     
     private:
+        Start(const Start&);
         Start& operator=(const Start&);
         void accept_clients();
     
     public:
-        Start(int port = 80);
+        explicit Start(int port = 80);
         ~Start();
         void run_poll();
 };

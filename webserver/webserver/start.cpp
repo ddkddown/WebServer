@@ -17,23 +17,21 @@ Start::Start(int port){
     }
     
     clients.clear();
-    clients.push_back(conn.listenfd);
 }
 
 void Start::accept_clients(){
     LOGI("web server start!");
     
     conn.clientlen = sizeof(conn.clientaddr);
-    while (1) {
-        conn.connfd = app.Accept(conn.listenfd, (struct sockaddr*)&conn.clientaddr,
+    conn.connfd = app.Accept(conn.listenfd, (struct sockaddr*)&conn.clientaddr,
                              (socklen_t*)&conn.clientlen);
-        if(conn.connfd < 0){
-            LOGE("accept connfd failed! %d",conn.connfd);
-            exit(1);
-        }
-        
-        clients.push_back(conn.connfd);
+    
+    if(conn.connfd < 0){
+        LOGE("accept connfd failed! %d",conn.connfd);
+        return;
     }
+        
+    clients.push_back(conn.connfd);
 }
 
 void Start::run_poll(){
@@ -43,8 +41,10 @@ void Start::run_poll(){
         
         int maxfd = conn.listenfd+1;
         if(!clients.empty()){
+            LOGI("clients is not empty!");
             for(auto i : clients){
                 FD_SET(i,&rfd);
+                LOGI("clients is %d",i);
                 maxfd = conn.listenfd>i?conn.listenfd+1:i+1;
             }
         }

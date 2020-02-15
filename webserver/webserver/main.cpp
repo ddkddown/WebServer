@@ -8,9 +8,9 @@ int main(int argc, char** argv)
 {
     LOGI("webserver program begin!");
     
-    int port = 7788;
+    int port = 9677;
     if(argc != 2){
-        LOGI("usage: %s <port>\n", argv[0]);
+        LOGI("usage:  <port>\n");
     }else{
         port = atoi(argv[1]);
     }

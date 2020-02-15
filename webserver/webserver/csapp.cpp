@@ -645,11 +645,11 @@ ssize_t Csapp::rio_readlineb(rio_t *rp, void *usrbuf, size_t maxlen)
             }
         } else if (rc == 0) {
             if (n == 1)
-                return 0; /* EOF, no data read */
+                return 0;
             else
-                break;    /* EOF, some data was read */
+                break;
         } else
-            return -1;      /* Error */
+            return -1;
     }
     *bufp = 0;
     return n-1;
@@ -693,7 +693,6 @@ ssize_t Csapp::Rio_readnb(rio_t *rp, void *usrbuf, size_t n)
 ssize_t Csapp::Rio_readlineb(rio_t *rp, void *usrbuf, size_t maxlen)
 {
     ssize_t rc;
-    
     if ((rc = rio_readlineb(rp, usrbuf, maxlen)) < 0){
         LOGE("%s error! %s",__func__,strerror(errno));
         exit(1);
@@ -708,18 +707,17 @@ int Csapp::open_clientfd(char *hostname, int port)
     struct sockaddr_in serveraddr;
     
     if ((clientfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-        return -1; /* Check errno for cause of error */
+        return -1;
     
-    /* Fill in the server's IP address and port */
     if ((hp = gethostbyname(hostname)) == NULL)
-        return -2; /* Check h_errno for cause of error */
+        return -2;
     bzero((char *) &serveraddr, sizeof(serveraddr));
     serveraddr.sin_family = AF_INET;
     bcopy((char *)hp->h_addr_list[0],
           (char *)&serveraddr.sin_addr.s_addr, hp->h_length);
     serveraddr.sin_port = htons(port);
     
-    /* Establish a connection with the server */
+    
     if (connect(clientfd, (SA *) &serveraddr, sizeof(serveraddr)) < 0)
         return -1;
     return clientfd;
@@ -730,23 +728,22 @@ int Csapp::open_listenfd(int port)
     int listenfd, optval=1;
     struct sockaddr_in serveraddr;
     
-    /* Create a socket descriptor */
+    
     if ((listenfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
         return -1;
     
-    /* Eliminates "Address already in use" error from bind */
+    
     if (setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR,
                    (const void *)&optval , sizeof(int)) < 0)
         return -1;
-    /* Listenfd will be an endpoint for all requests to port
-     on any IP address for this host */
+    
     bzero((char *) &serveraddr, sizeof(serveraddr));
     serveraddr.sin_family = AF_INET;
     serveraddr.sin_addr.s_addr = inet_addr("127.0.0.1");
     serveraddr.sin_port = htons((unsigned short)port);
     if (bind(listenfd, (SA *)&serveraddr, sizeof(serveraddr)) < 0)
         return -1;
-    /* Make it a listening socket ready to accept connection requests */
+    
     if (listen(listenfd, LISTENQ) < 0)
         return -1;
     return listenfd;

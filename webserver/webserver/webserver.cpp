@@ -27,19 +27,14 @@ class Webserver::interface{
             LOGD("readline b :%s",buf);
             sscanf(buf, "%s %s %s",method, url, version);
             
-            LOGI("buf:%s,method:%s,url:%s,version:%s",buf,method,url,version);
+            LOGD("buf:%s,method:%s,url:%s,version:%s",buf,method,url,version);
             if(!strcasecmp(method, GET) && !strcasecmp(method, POST)){
                 clienterror(fd, filename, "501", "Not Implemented",
                             "Web Server does not implement this method");
                 return;
             }
             
-            if(strcasecmp(method, GET)){
-                read_requesthdrs(&rio, GET,cgiargs);
-            }
-            if (strcasecmp(method, POST)) {
-                read_requesthdrs(&rio, POST, cgiargs);
-            }
+            read_requesthdrs(&rio, method,cgiargs);
             
             is_static = parse_url(url, filename, cgiargs);
             if(stat(filename, &sbuf) < 0){
@@ -75,9 +70,9 @@ class Webserver::interface{
             if(method == GET){
                 //get请求直接把所有请求头读走
                 app.Rio_readlineb(rp, buf, MAXLINE);
-                while (strcmp(buf, "\r\n")) {
+                while (strcmp("\r\n", buf) != 0) {
                     app.Rio_readlineb(rp, buf, MAXLINE);
-                    LOGD("%s", buf);
+                    LOGD("GET: %s",buf);
                 }
             }
         
@@ -86,9 +81,8 @@ class Webserver::interface{
                 app.Rio_readlineb(rp, buf, MAXLINE);
                 while (strcmp("\r\n", buf) != 0) {
                     app.Rio_readlineb(rp, buf, MAXLINE);
-                    LOGD("%s",buf);
+                    LOGD("POST: %s",buf);
                 }
-            
                 //读取post的请求体
                 app.Rio_readlineb(rp, buf, MAXLINE);
                 strncpy(cgiargs, buf, MAXLINE);

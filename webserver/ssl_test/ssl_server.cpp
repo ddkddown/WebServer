@@ -25,7 +25,7 @@ class SSL_SERVER : public SSL_BASE{
                 return;
             }
 
-            if(SSL_CTX_use_certificate_file(ctx, "./cert.crt", SSL_FILETYPE_PEM) <= 0){
+            if(SSL_CTX_use_certificate_file(ctx, "./cert.pem", SSL_FILETYPE_PEM) <= 0){
                 error_output(nullptr);
                 return;
             }

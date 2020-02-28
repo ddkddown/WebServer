@@ -15,6 +15,7 @@ class SSL_CLIENT : public SSL_BASE{
             ctx = SSL_CTX_new(SSLv23_client_method());
             if(nullptr == ctx){
                 error_output(nullptr);
+                return;
             }
         }
 
@@ -23,6 +24,7 @@ class SSL_CLIENT : public SSL_BASE{
 
             if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
                 error_output("client sockfd init failed!");
+                return;
             }
 
             bzero(&dst, sizeof(dst));
@@ -32,6 +34,7 @@ class SSL_CLIENT : public SSL_BASE{
 
             if(connect(sockfd, (struct sockaddr*)&dst, sizeof(dst)) != 0){
                 error_output("connect failed!");
+                return;
             }
         }
 
@@ -41,6 +44,7 @@ class SSL_CLIENT : public SSL_BASE{
             
             if(-1 == SSL_connect(ssl)){
                 error_output(nullptr);
+                return;
             }
 
             show_certs(ssl);

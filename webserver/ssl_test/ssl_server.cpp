@@ -1,94 +1,92 @@
-#include <iostream>
+#include "ssl_base.hpp"
+#define LISNUM 10
+class SSL_SERVER : public SSL_BASE{
+    private:
+        int sockfd = -1;
+    public:
+        ~SSL_SERVER(){
+            if(sockfd){
+                close(sockfd);
+            }
 
-extern "C"{
-#include <unistd.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include <cstring>
-}
+            if(ctx){
+                SSL_CTX_free(ctx);
+            }
 
-using namespace std;
+            if(ssl){
+                SSL_free(ssl);
+            }
+        }
+    public:
+        virtual void init_ctx(){
+            ctx = SSL_CTX_new(SSLv23_server_method());
+            if(nullptr == ctx){
+                error_output(nullptr);
+                return;
+            }
 
-int create_socket(int port){
-    int s;
-    struct sockaddr_in addr;
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(port);
-    addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+            if(SSL_CTX_use_certificate_file(ctx, "./cert.crt", SSL_FILETYPE_PEM) <= 0){
+                error_output(nullptr);
+                return;
+            }
 
-    s = socket(AF_INET, SOCK_STREAM, 0);
-    if(s < 0){
-        cout<<"Unable to create socket";
-    }
+            if(SSL_CTX_use_PrivateKey_file(ctx, "./privkey.pem", SSL_FILETYPE_PEM) <= 0){
+                error_output(nullptr);
+                return;
+            }
 
-    if(bind(s, (struct sockaddr*)&addr, sizeof(addr)) < 0){
-        cout<<"unable to bind";
-    }
-
-    if(listen(s,1) < 0){
-        cout<<"unable to listen";
-    }
-
-    return s;
-}
-
-void init_openssl(){
-    SSL_load_error_strings();
-    OpenSSL_add_ssl_algorithms();
-}
-
-void cleanup_openssl(){
-    EVP_cleanup();
-}
-
-SSL_CTX* create_context(){
-    const SSL_METHOD* method;
-    SSL_CTX* ctx;
-    method = SSLv23_server_method();
-    ctx = SSL_CTX_new(method);
-    if(!ctx){
-        cout<<"unable to create ssl context";
-        exit(1);
-    }
-    
-    return ctx;
-}
-
-int main(){
-    int sock;
-    SSL_CTX* ctx;
-    init_openssl();
-    ctx = create_context();
-    
-    sock = create_socket(4400);
-
-    while(1){
-        struct sockaddr_in addr;
-        uint len = sizeof(addr);
-        SSL* ssl;
-        const char reply[] = "test\n";
-        int client = accept(sock,(struct sockaddr*)&addr, &len);
-        if(client < 0){
-            cout<<"unable to accept";
-            exit(1);
+            if(!SSL_CTX_check_private_key(ctx)){
+                error_output(nullptr);
+                return;
+            }
         }
 
-        ssl = SSL_new(ctx);
-        SSL_set_fd(ssl, client);
+        void init_sock(){
+            struct sockaddr_in server_addr;
+            if(-1 == (sockfd = socket(PF_INET, SOCK_STREAM, 0))){
+                error_output("socket create failed!");
+                return;
+            }
+            
+            bzero(&server_addr, sizeof(server_addr));
+            server_addr.sin_family = PF_INET;
+            server_addr.sin_port = htons(9677);
+            server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
-        if(SSL_accept(ssl) <= 0){
-            cout<<"ssl accept failed!";
-        }else{
-            SSL_write(ssl, reply, strlen(reply));
+            if(-1 == bind(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr))){
+                error_output("bind failed!");
+                return;
+            }
+
+            if(-1 == listen(sockfd, LISNUM)){
+                error_output("listen failed!");
+                return;
+            }
         }
 
-        SSL_shutdown(ssl);
-        SSL_free(ssl);
-        close(client);
-    }
-    close(sock);
-    SSL_CTX_free(ctx);
-    cleanup_openssl();
-}
+        void start_accept(){
+            char buf[1024] = {0};
+            struct sockaddr_in client_addr;
+            int newfd = -1;
+            if(-1 == (newfd = accept(sockfd, (struct sockaddr*)&client_addr, sizeof(struct sockaddr)))){
+                error_output("accept failed!");
+                return;
+            }
+
+            ssl = SSL_new(ctx);
+            SSL_set_fd(ssl, newfd);
+            if(-1 == SSL_accept(ssl)){
+                error_output("accept failed!");
+                close(newfd);
+                return;
+            }
+            
+            SSL_read(ssl, buf, 1024);
+            cout<<buf<<endl;
+            SSL_shutdown(ssl);
+            SSL_free(ssl);
+            ssl = nullptr;
+            close(newfd);
+            close(sockfd);
+        }
+};

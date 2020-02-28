@@ -3,7 +3,7 @@ class SSL_BASE{
     protected:
         SSL_CTX* ctx;
         SSL* ssl;
-    private:
+    protected:
         void error_output(char* str){
             if(str){
                 cout<<str<<endl;

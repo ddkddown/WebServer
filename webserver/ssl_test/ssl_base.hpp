@@ -4,7 +4,7 @@ class SSL_BASE{
         SSL_CTX* ctx;
         SSL* ssl;
     protected:
-        void error_output(char* str){
+        void error_output(const char* str){
             if(str){
                 cout<<str<<endl;
             }else{
@@ -13,10 +13,10 @@ class SSL_BASE{
         }
 
     public:
-        SSL_CTX():ctx(nullptr),ssl(nullptr){}
-        SSL_CTX(const SSL_CTX& obj) = delete;
-        SSL_CTX& operator=(const SSL_CTX& obj) = delete;
-        ~SSL_CTX(){
+        SSL_BASE():ctx(nullptr),ssl(nullptr){}
+        SSL_BASE(const SSL_BASE& obj) = delete;
+        SSL_BASE& operator=(const SSL_BASE& obj) = delete;
+        ~SSL_BASE(){
             if(ssl){
                 SSL_free(ssl);
             }
@@ -33,7 +33,7 @@ class SSL_BASE{
             SSL_load_error_strings();
         }
         
-        void show_certs(SSL* ssl){
+        void show_certs(){
             X509* cert = nullptr;
             char* line = nullptr;
             cert = SSL_get_peer_certificate(ssl);
@@ -49,6 +49,6 @@ class SSL_BASE{
             }
         }
 
-        virtual void init_ctx() = delete;
+        virtual void init_ctx() = 0;
 
 };

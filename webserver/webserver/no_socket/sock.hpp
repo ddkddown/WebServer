@@ -106,10 +106,8 @@ namespace ddk{
                     return false;
                 }
                 server.sin_family = AF_INET;
-                std::cout<<d_port<<std::endl;
-                server.sin_port = d_port;
+                server.sin_port = htons(d_port);
                 server.sin_addr.s_addr = inet_addr(d_ip.c_str());
-                std::cout<<server.sin_port<<std::endl;
                 if(0 > bind(d_fd, (struct sockaddr*)&server, sizeof(server))){
                     ddk_errno = bind_socket_error;
                     return false;
@@ -164,9 +162,8 @@ namespace ddk{
                 }
 
                 server.sin_family = AF_INET;
-                server.sin_port = d_port;
+                server.sin_port = htons(d_port);
                 server.sin_addr.s_addr = inet_addr(d_ip.c_str());
-                std::cout<<server.sin_port<<server.sin_addr.s_addr<<std::endl;
                 if(0 > connect(d_fd, (struct sockaddr*)&server,c_size)){
                     ddk_errno = connect_server_error;
                     return false;

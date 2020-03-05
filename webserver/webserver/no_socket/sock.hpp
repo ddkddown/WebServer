@@ -49,13 +49,15 @@ namespace ddk{
                 int count = 0, recv = 0;
                 while(count < recv_size){
                     int buf_len = recv_size-count;
-                    char buf[buf_len] = {0};
+                    char* buf= new char[buf_len];
                     recv = read(c_fd,buf,buf_len);
                     if(-1 == recv){
                         ddk_errno = recv_data_error;
                         ret_data.clear();
+                        delete buf;
                         return ret_data;
                     }
+                    delete buf;
                     count += recv;
                     ret_data.append(buf);
                 }
@@ -162,13 +164,14 @@ namespace ddk{
                 }
 
                 server.sin_family = AF_INET;
-                server.sin_port = htonl(d_port);
+                server.sin_port = d_port;
                 server.sin_addr.s_addr = inet_addr(d_ip.c_str());
-
+                std::cout<<server.sin_port<<server.sin_addr.s_addr<<std::endl;
                 if(0 > connect(d_fd, (struct sockaddr*)&server,c_size)){
                     ddk_errno = connect_server_error;
                     return false;
                 }
+                return true;
             }
 
             std::string recv(int recv_size){

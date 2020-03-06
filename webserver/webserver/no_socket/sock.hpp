@@ -19,7 +19,13 @@ namespace ddk{
         accept_client_error,
         connect_server_error,
         send_data_error,
-        recv_data_error
+        recv_data_error,
+        start_ssl_server_error,
+        ssl_ctx_create_error,
+        ssl_load_cert_error,
+        ssl_load_privkey_error,
+        ssl_check_privkey_error,
+        ssl_get_client_error
     };
 
     class Socket_base{

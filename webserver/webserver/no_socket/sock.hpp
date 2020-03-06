@@ -26,7 +26,8 @@ namespace ddk{
         ssl_load_cert_error,
         ssl_load_privkey_error,
         ssl_check_privkey_error,
-        ssl_get_client_error
+        ssl_get_client_error,
+        ssl_connect_server_error
     };
 
     class Socket_base{
@@ -54,12 +55,8 @@ namespace ddk{
         
         protected:
             template<typename fd_type = int>
-            std::string recv_data(int recv_size, int c_fd, std::function<int(fd_type,void*,int)>& func){
+            std::string recv_data(int recv_size, fd_type c_fd, std::function<int(fd_type,void*,int)>& func){
                 std::string ret_data = "";
-                if(0 >= c_fd){
-                    ddk_errno = fd_value_invalid;
-                    return ret_data;
-                }
 
                 int count = 0, recv = 0;
                 while(count < recv_size){
@@ -81,17 +78,12 @@ namespace ddk{
             }
 
             template<typename fd_type = int>
-            int send_data(std::string& mess, int c_fd, std::function<int(fd_type,void*,int)>& func){
-                if(0 >= c_fd){
-                    ddk_errno = fd_value_invalid;
-                    return -1;
-                }
-
+            int send_data(std::string& mess, fd_type c_fd, std::function<int(fd_type,void*,int)>& func){
                 int count = 0, send = 0, data_len = mess.length();
                 const char* c = mess.c_str();
                 while(count < data_len){
                     int send_count = (data_len-count);
-                    send = func(c_fd,(void*)c,send_count);
+                    send = func(c_fd,c,send_count);
                     if(-1 == send){
                         ddk_errno = send_data_error;
                         return -1;
@@ -154,11 +146,19 @@ namespace ddk{
 
             std::string recv(int recv_size , int& c_fd, std::function<int(int,void*,int)> func
                                 = [](int fd,void* buf,int num)->int{return read(fd,buf,num);}){
+                if(0 >= c_fd){
+                    ddk_errno = fd_value_invalid;
+                    return "";
+                }
                 return recv_data(recv_size,c_fd,func);
             }
 
             int send(std::string& mess, int c_fd, std::function<int(int,void*,int)> func
                                 =[](int fd,void* buf,int num)->int{return write(fd,buf,num);}){
+                if(0 >= c_fd){
+                    ddk_errno = fd_value_invalid;
+                    return -1;
+                }
                 return send_data(mess,c_fd,func);
             }
 
@@ -192,11 +192,19 @@ namespace ddk{
 
             std::string recv(int recv_size, std::function<int(int,void*,int)> func
                              = [](int fd,void* buf,int num)->int{return read(fd,buf,num);}){
+                if(0 >= d_fd){
+                    ddk_errno = fd_value_invalid;
+                    return "";
+                }
                 return recv_data(recv_size, d_fd,func);
             }
 
             int send(std::string& mess, std::function<int(int,void*,int)> func
-            =[](int fd,void* buf,int num)->int{return write(fd,buf,num);}){
+                            =[](int fd,void* buf,int num)->int{return write(fd,buf,num);}){
+                if(0 >= d_fd){
+                    ddk_errno = fd_value_invalid;
+                    return -1;
+                }
                 return send_data(mess, d_fd,func);
             }
         

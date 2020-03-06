@@ -8,6 +8,7 @@
 
 #include<iostream>
 #include<string>
+#include<functional>
 namespace ddk{
     int ddk_errno = 0;
     
@@ -32,6 +33,13 @@ namespace ddk{
         protected:
             int d_fd, d_port;
             std::string d_ip;
+        
+        protected:
+            template<typename fd_type = int>
+            using read_func = int(*)(fd_type* fd, void* buf, int num);
+
+            template<typename fd_type = int>
+            using write_func = int(*)(fd_type* fd, void* buf, int num);
 
         public:
             Socket_base(std::string ip, int port):d_ip(ip),d_port(port),d_fd(-1){}
@@ -45,7 +53,8 @@ namespace ddk{
             virtual void keep_alive() = 0;
         
         protected:
-            std::string recv_data(int recv_size, int& c_fd){
+            template<typename fd_type = int>
+            std::string recv_data(int recv_size, int& c_fd, std::function<int(fd_type,void*,int)>& func){
                 std::string ret_data = "";
                 if(0 >= c_fd){
                     ddk_errno = fd_value_invalid;
@@ -56,7 +65,7 @@ namespace ddk{
                 while(count < recv_size){
                     int buf_len = recv_size-count;
                     char* buf= new char[buf_len];
-                    recv = read(c_fd,buf,buf_len);
+                    recv = func(c_fd,buf,buf_len);
                     if(-1 == recv){
                         ddk_errno = recv_data_error;
                         ret_data.clear();
@@ -71,7 +80,8 @@ namespace ddk{
                 return ret_data;
             }
 
-            int send_data(std::string& mess, int& c_fd){
+            template<typename fd_type = int>
+            int send_data(std::string& mess, int& c_fd, std::function<int(fd_type,void*,int)>& func){
                 if(0 >= c_fd){
                     ddk_errno = fd_value_invalid;
                     return -1;
@@ -80,7 +90,7 @@ namespace ddk{
                 int count = 0, send = 0, data_len = mess.length();
                 const char* c = mess.c_str();
                 while(count < data_len){
-                    send = write(c_fd,c,data_len-count);
+                    send = func(c_fd,c,data_len-count);
                     if(-1 == send){
                         ddk_errno = send_data_error;
                         return -1;
@@ -141,12 +151,14 @@ namespace ddk{
                 close(c_fd);
             }
 
-            std::string recv(int recv_size , int& c_fd){
-                return recv_data(recv_size,c_fd);
+            std::string recv(int recv_size , int& c_fd, std::function<int(int,void*,int)>& func 
+                                = [](int fd,void* buf,int num)->int{return read(fd,buf,num);}){
+                return recv_data(recv_size,c_fd,func);
             }
 
-            int send(std::string& mess, int c_fd){
-                return send_data(mess,c_fd);
+            int send(std::string& mess, int c_fd, std::function<int(int,void*,int)>& func
+                                =[](int fd,void* buf,int num)->int{return write(fd,buf,num);}){
+                return send_data(mess,c_fd,func);
             }
 
             virtual void keep_alive(){}

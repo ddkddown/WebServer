@@ -54,7 +54,7 @@ namespace ddk{
         
         protected:
             template<typename fd_type = int>
-            std::string recv_data(int recv_size, int& c_fd, std::function<int(fd_type,void*,int)>& func){
+            std::string recv_data(int recv_size, int c_fd, std::function<int(fd_type,void*,int)>& func){
                 std::string ret_data = "";
                 if(0 >= c_fd){
                     ddk_errno = fd_value_invalid;
@@ -69,10 +69,10 @@ namespace ddk{
                     if(-1 == recv){
                         ddk_errno = recv_data_error;
                         ret_data.clear();
-                        delete buf;
+                        delete[] buf;
                         return ret_data;
                     }
-                    delete buf;
+                    delete[] buf;
                     count += recv;
                     ret_data.append(buf);
                 }
@@ -81,7 +81,7 @@ namespace ddk{
             }
 
             template<typename fd_type = int>
-            int send_data(std::string& mess, int& c_fd, std::function<int(fd_type,void*,int)>& func){
+            int send_data(std::string& mess, int c_fd, std::function<int(fd_type,void*,int)>& func){
                 if(0 >= c_fd){
                     ddk_errno = fd_value_invalid;
                     return -1;
@@ -90,7 +90,8 @@ namespace ddk{
                 int count = 0, send = 0, data_len = mess.length();
                 const char* c = mess.c_str();
                 while(count < data_len){
-                    send = func(c_fd,c,data_len-count);
+                    int send_count = (data_len-count);
+                    send = func(c_fd,(void*)c,send_count);
                     if(-1 == send){
                         ddk_errno = send_data_error;
                         return -1;
@@ -151,12 +152,12 @@ namespace ddk{
                 close(c_fd);
             }
 
-            std::string recv(int recv_size , int& c_fd, std::function<int(int,void*,int)>& func 
+            std::string recv(int recv_size , int& c_fd, std::function<int(int,void*,int)> func
                                 = [](int fd,void* buf,int num)->int{return read(fd,buf,num);}){
                 return recv_data(recv_size,c_fd,func);
             }
 
-            int send(std::string& mess, int c_fd, std::function<int(int,void*,int)>& func
+            int send(std::string& mess, int c_fd, std::function<int(int,void*,int)> func
                                 =[](int fd,void* buf,int num)->int{return write(fd,buf,num);}){
                 return send_data(mess,c_fd,func);
             }
@@ -189,12 +190,14 @@ namespace ddk{
                 return true;
             }
 
-            std::string recv(int recv_size){
-                return recv_data(recv_size, d_fd);
+            std::string recv(int recv_size, std::function<int(int,void*,int)> func
+                             = [](int fd,void* buf,int num)->int{return read(fd,buf,num);}){
+                return recv_data(recv_size, d_fd,func);
             }
 
-            int send(std::string& mess){
-                return send_data(mess, d_fd);
+            int send(std::string& mess, std::function<int(int,void*,int)> func
+            =[](int fd,void* buf,int num)->int{return write(fd,buf,num);}){
+                return send_data(mess, d_fd,func);
             }
         
             virtual void keep_alive(){}

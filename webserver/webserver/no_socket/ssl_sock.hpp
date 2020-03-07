@@ -3,6 +3,11 @@
 namespace ddk{
     class Ssl_base{
         protected:
+            struct d_ssl{
+                SSL* ssl;
+                int fd;
+            };
+        protected:
             SSL_CTX* ctx;
         public:
             Ssl_base():ctx(nullptr){ 
@@ -18,6 +23,7 @@ namespace ddk{
                 }
             }
     };
+
     template<int listen_num = 10, bool open_keepalive = false>
     class Ssl_server : protected Socket_server<listen_num, open_keepalive>, protected Ssl_base{
         private:
@@ -28,7 +34,7 @@ namespace ddk{
                 Socket_server<listen_num, open_keepalive>(ip,port),d_cert(cert),d_privkey(privkey){}
         public:
             bool start_ssl_server(){
-                if(!start_server()){
+                if(!this->start_server()){
                     ddk_errno = start_ssl_server_error;
                     return false;
                 }
@@ -53,16 +59,106 @@ namespace ddk{
                     ddk_errno = ssl_check_privkey_error;
                     return false;
                 }
+
+                return true;
             }
 
-            SSL* get_ssl_client(){
-                int c_fd = get_client_fd();
+            d_ssl get_ssl_client(){
+                int c_fd = this->get_client_fd();
                 auto ssl = SSL_new(ctx);
+                SSL_set_fd(ssl, c_fd);
                 if(-1 == SSL_accept(ssl)){
                     ddk_errno = ssl_get_client_error;
-
+                    close(c_fd);
+                    SSL_free(ssl);
+                    return {nullptr,-1};
                 }
+                d_ssl ret = {ssl,c_fd};
+                return ret;
             }
 
+            void close_ssl_client(d_ssl& obj){
+                SSL_shutdown(obj.ssl);
+                SSL_free(obj.ssl);
+                close(obj.fd);
+            }
+
+            std::string recv(int recv_size, SSL* ssl, std::function<int(SSL*,void*,int)> func
+                        = [](SSL* ssl,void* buf, int num)->int{return SSL_read(ssl,buf,num);}){
+                if(nullptr == ssl){
+                    ddk_errno = fd_value_invalid;
+                    return "";
+                }
+                return this->recv_data(recv_size,ssl,func);
+            }
+            int send(std::string& mess, SSL* ssl, std::function<int(SSL*,void*,int)>func
+                        =[](SSL* ssl,void* buf,int num)->int{return SSL_write(ssl,buf,num);}){
+                if(nullptr == ssl){
+                    ddk_errno = fd_value_invalid;
+                    return -1;
+                }
+                return this->send_data(mess,ssl,func);
+            }
+    };
+
+    template<bool open_keepalive = false>
+    class Ssl_client : protected Socket_client<open_keepalive>, protected Ssl_base{
+        private:
+            SSL* ssl;
+        public:
+            Ssl_client(std::string ip, int port):Socket_client<open_keepalive>(ip,port),ssl(nullptr){}
+            ~Ssl_client(){
+                if(ssl){
+                    SSL_shutdown(ssl);
+                    SSL_free(ssl);
+                }
+            }
+        public:
+            bool connect_to_server(){
+                if(!this->connect_to_server()){
+                    ddk_errno = connect_server_error;
+                    return false;
+                }
+
+                ctx = SSL_CTX_new(SSLv23_client_method());
+                if(nullptr == ctx){
+                    ddk_errno = ssl_ctx_create_error;
+                    return false;
+                }
+
+                ssl = SSL_new(ctx);
+                SSL_set_fd(ssl,this->d_fd);
+
+                if(-1 == SSL_connect(ssl)){
+                    ddk_errno = ssl_connect_server_error;
+                    return false;
+                }
+            }
+        
+            std::string recv(int recv_size, std::function<int(SSL*,void*,int)> func
+                        = [](SSL* ssl,void* buf, int num)->int{return SSL_read(ssl,buf,num);}){
+                if(nullptr == ssl){
+                    ddk_errno = fd_value_invalid;
+                    return "";
+                }
+
+                return this->write_data(recv_size,ssl,func);
+            }
+
+            int send(std::string& mess, std::function<int(SSL*,void*,int)>func
+                        =[](SSL* ssl,void* buf,int num)->int{return SSL_write(ssl,buf,num);}){
+                if(nullptr == ssl){
+                    ddk_errno = fd_value_invalid;
+                    return -1;
+                }
+
+                return this->send_data(mess,ssl,func);
+            }
+
+            void close_connect(){
+                SSL_shutdown(ssl);
+                SSL_free(ssl);
+                ssl = nullptr;
+            }
     };
 }

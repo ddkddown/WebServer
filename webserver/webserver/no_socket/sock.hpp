@@ -43,6 +43,7 @@ namespace ddk{
             using write_func = int(*)(fd_type* fd, void* buf, int num);
 
         public:
+            Socket_base(){}
             Socket_base(std::string ip, int port):d_ip(ip),d_port(port),d_fd(-1){}
             ~Socket_base(){
                 if(d_fd){

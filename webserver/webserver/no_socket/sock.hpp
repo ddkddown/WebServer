@@ -81,7 +81,7 @@ namespace ddk{
             template<typename fd_type = int>
             int send_data(std::string& mess, fd_type c_fd, std::function<int(fd_type,void*,int)>& func){
                 int count = 0, send = 0, data_len = mess.length();
-                const char* c = mess.c_str();
+                char* c = const_cast<char*>(mess.c_str());
                 while(count < data_len){
                     int send_count = (data_len-count);
                     send = func(c_fd,c,send_count);

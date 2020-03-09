@@ -114,7 +114,7 @@ namespace ddk{
                 }
             }
         public:
-            bool connect_to_server(){
+            bool ssl_connect_to_server(){
                 if(!this->connect_to_server()){
                     ddk_errno = connect_server_error;
                     return false;
@@ -133,6 +133,7 @@ namespace ddk{
                     ddk_errno = ssl_connect_server_error;
                     return false;
                 }
+                return true;
             }
         
             std::string recv(int recv_size, std::function<int(SSL*,void*,int)> func
